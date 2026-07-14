@@ -6,28 +6,29 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="TedoraKids">
-<meta name="theme-color" content="#FBF3F1">
+<meta name="theme-color" content="#FFFBFC">
 <title>TedoraKids Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --bg:#FBF3F1;
+    --bg:#FFFBFC;
     --surface:#FFFFFF;
-    --surface-2:#FCF7F5;
-    --ink:#3A2A32;
-    --ink-soft:#7A6670;
-    --ink-faint:#A896A0;
-    --line:#F0E2DE;
-    --line-2:#E7D6D1;
-    --accent:#B03A63;
-    --accent-soft:#F6E4EC;
-    --accent-ink:#8C2C4E;
-    --sage:#7E9B84;
-    --gold:#C99A3C;
-    --shadow:0 1px 2px rgba(58,42,50,.04),0 4px 16px rgba(58,42,50,.06);
-    --shadow-lg:0 8px 30px rgba(58,42,50,.14);
+    --surface-2:#FBF4F6;
+    --ink:#454049;
+    --ink-soft:#8A828F;
+    --ink-faint:#B7AEBB;
+    --line:#F3E9ED;
+    --line-2:#EBDCE2;
+    --accent:#D26A88;
+    --accent-soft:#FBE7EE;
+    --accent-ink:#B24D6E;
+    --sage:#5E9CB8;
+    --gold:#CF9A57;
+    --shadow:0 1px 2px rgba(94,74,86,.05),0 4px 16px rgba(94,74,86,.07);
+    --shadow-lg:0 8px 30px rgba(94,74,86,.16);
     --r:16px;
     --r-sm:11px;
     --safe-b:env(safe-area-inset-bottom,0px);
@@ -57,8 +58,8 @@
   .brand{display:flex;align-items:center;gap:10px}
   .brand .mark{
     width:30px;height:30px;border-radius:9px;flex:0 0 auto;
-    background:linear-gradient(135deg,var(--accent),#D26A8E);
-    display:grid;place-items:center;box-shadow:0 2px 8px rgba(176,58,99,.35);
+    background:linear-gradient(135deg,var(--accent),#E48FA8);
+    display:grid;place-items:center;box-shadow:0 2px 8px rgba(210,106,136,.35);
   }
   .brand .mark svg{width:17px;height:17px}
   .brand h1{font-size:20px;font-weight:600;color:var(--ink)}
@@ -193,7 +194,7 @@
     display:flex;align-items:center;justify-content:center;gap:7px;transition:transform .1s;
   }
   .btn:active{transform:scale(.97)}
-  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(176,58,99,.3)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-ink));color:#fff;box-shadow:0 3px 10px rgba(210,106,136,.32)}
   .btn-ghost{background:var(--surface);color:var(--ink-soft);border:1px solid var(--line-2)}
   .btn-block{width:100%}
   .btn svg{width:16px;height:16px}
@@ -250,14 +251,14 @@
   .tailor-del svg{width:16px;height:16px;stroke:currentColor}
 
   /* ---------- Reports ---------- */
-  .report-hero{background:linear-gradient(135deg,var(--accent),#C85680);border-radius:var(--r);padding:20px;color:#fff;margin-bottom:14px;box-shadow:var(--shadow-lg)}
+  .report-hero{background:linear-gradient(135deg,var(--accent),#B24D6E);border-radius:var(--r);padding:20px;color:#fff;margin-bottom:14px;box-shadow:var(--shadow-lg)}
   .report-hero .l{font-size:12.5px;font-weight:700;opacity:.85;letter-spacing:.03em}
   .report-hero .n{font-family:'Fraunces',serif;font-size:34px;font-weight:600;margin-top:4px;line-height:1}
   .report-hero .sub{font-size:12.5px;opacity:.85;margin-top:8px;font-weight:600}
   .bar-row{display:flex;align-items:center;gap:11px;margin-bottom:11px}
   .bar-row .m{flex:0 0 38px;font-size:12px;font-weight:800;color:var(--ink-soft)}
   .bar-track{flex:1;height:26px;background:var(--surface-2);border-radius:8px;overflow:hidden;border:1px solid var(--line)}
-  .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),#D26A8E);border-radius:8px;min-width:2px;transition:width .4s}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),#E48FA8);border-radius:8px;min-width:2px;transition:width .4s}
   .bar-row .val{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--ink);width:64px;text-align:right}
 
   /* ---------- Bottom nav ---------- */
@@ -277,7 +278,7 @@
     position:absolute;top:-24px;left:50%;transform:translateX(-50%);
     width:56px;height:56px;border-radius:50%;
     background:var(--accent);color:#fff;display:grid;place-items:center;
-    box-shadow:0 6px 18px rgba(176,58,99,.45);transition:transform .12s;
+    box-shadow:0 6px 18px rgba(210,106,136,.45);transition:transform .12s;
   }
   .fab:active{transform:translateX(-50%) scale(.92)}
   .fab svg{width:26px;height:26px;stroke:#fff;stroke-width:2.4}
@@ -318,9 +319,85 @@
   .back-btn{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:800;color:var(--ink-soft);margin-bottom:6px;padding:6px 0}
   .back-btn svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.4;fill:none}
   @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- Auth screen ---------- */
+  .app{display:none}
+  .app.ready{display:block}
+  #auth-screen{
+    position:fixed;inset:0;z-index:500;background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:28px 22px calc(28px + var(--safe-b));max-width:520px;margin:0 auto;overflow-y:auto;
+  }
+  #auth-screen.hidden{display:none}
+  .auth-mark{
+    width:64px;height:64px;border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),#E48FA8);
+    display:grid;place-items:center;box-shadow:0 8px 24px rgba(210,106,136,.4);margin-bottom:18px;
+  }
+  .auth-mark svg{width:34px;height:34px}
+  .auth-title{font-family:'Fraunces',serif;font-size:28px;font-weight:600;color:var(--ink)}
+  .auth-title span{color:var(--accent)}
+  .auth-sub{font-size:14px;color:var(--ink-soft);font-weight:600;margin-top:6px;margin-bottom:26px;text-align:center}
+  .auth-card{
+    background:var(--surface);border-radius:20px;padding:22px;width:100%;max-width:360px;
+    box-shadow:var(--shadow);border:1px solid var(--line);
+  }
+  .auth-card .form-group{margin-bottom:14px}
+  .auth-card label{display:block;font-size:12.5px;font-weight:800;color:var(--ink-soft);margin-bottom:6px}
+  .auth-card input{
+    width:100%;padding:13px;border-radius:12px;border:1px solid var(--line-2);
+    background:var(--surface);outline:none;transition:border .12s,box-shadow .12s;
+  }
+  .auth-card input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .auth-msg{font-size:13px;font-weight:700;margin:4px 0 12px;line-height:1.4;display:none}
+  .auth-msg.show{display:block}
+  .auth-msg.err{color:var(--accent)}
+  .auth-msg.ok{color:var(--sage)}
+  .auth-toggle{text-align:center;font-size:13.5px;color:var(--ink-soft);font-weight:600;margin-top:18px}
+  .auth-toggle button{color:var(--accent);font-weight:800}
+  .auth-foot{font-size:11.5px;color:var(--ink-faint);text-align:center;margin-top:22px;font-weight:600;max-width:320px;line-height:1.5}
+
+  .topbar-account{
+    position:absolute;top:calc(var(--safe-t) + 14px);right:18px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--sage);opacity:0;transition:opacity .2s}
+  .sync-dot.on{opacity:1;animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.3}}
+  .acct-btn{
+    width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);
+    display:grid;place-items:center;font-family:'Fraunces',serif;font-weight:600;font-size:15px;
+  }
+  .topbar{position:relative}
 </style>
 </head>
 <body>
+
+<!-- LOGIN / SIGN-UP SCREEN -->
+<div id="auth-screen">
+  <div class="auth-mark">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l3 3.5 4-1-1.5 4L21 12l-3.5 1.5 1 4-4-1.5L12 21l-2.5-4-4 1 1-4L3 12l3.5-1.5-1-4 4 1z" fill="#fff" opacity=".95"/></svg>
+  </div>
+  <div class="auth-title">Tedora<span>Kids</span></div>
+  <div class="auth-sub" id="auth-sub">Sign in to your order manager</div>
+  <div class="auth-card">
+    <div class="form-group">
+      <label>Email</label>
+      <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input id="auth-pass" type="password" autocomplete="current-password" placeholder="At least 6 characters">
+    </div>
+    <div class="auth-msg" id="auth-msg"></div>
+    <button class="btn btn-primary btn-block" id="auth-submit">Log in</button>
+    <div class="auth-toggle" id="auth-toggle-wrap">
+      New here? <button id="auth-toggle">Create an account</button>
+    </div>
+  </div>
+  <div class="auth-foot">Each business owner has a private account. Your orders are stored securely in the cloud and sync across your devices.</div>
+</div>
+
 <div class="app">
   <div class="topbar">
     <div class="brand">
@@ -331,6 +408,10 @@
         <h1>Tedora<span>Kids</span></h1>
         <div class="sub">ORDER MANAGER</div>
       </div>
+    </div>
+    <div class="topbar-account">
+      <span class="sync-dot" id="sync-dot"></span>
+      <button class="acct-btn" id="acct-btn" aria-label="Account">?</button>
     </div>
   </div>
 
@@ -401,45 +482,43 @@
 
 <script>
 /* ============================================================
-   TedoraKids Manager — storage layer
-   Uses window.storage (Claude artifact) when present,
-   falls back to localStorage on your own device.
+   TedoraKids Manager — cloud backend (Supabase)
+   Real accounts + per-owner data synced across devices.
    ============================================================ */
-const KEY = 'tedorakids_data_v1';
-const Store = {
-  async load(){
-    try{
-      if(window.storage){
-        try{ const r = await window.storage.get(KEY); return r&&r.value ? JSON.parse(r.value) : null; }
-        catch(e){ return null; }
-      }
-      const v = localStorage.getItem(KEY);
-      return v ? JSON.parse(v) : null;
-    }catch(e){ console.warn('load failed',e); return null; }
-  },
-  async save(data){
-    const str = JSON.stringify(data);
-    try{
-      if(window.storage){ await window.storage.set(KEY, str); return; }
-      localStorage.setItem(KEY, str);
-    }catch(e){ console.warn('save failed',e); showToast('Could not save — storage full?'); }
-  }
-};
+const SUPABASE_URL = 'https://vgbnepwgopnrvsuikyjc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_YTns9SAy_DJ63PwrXabZqQ_NlwsnwgZ';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser = null;
+
+function setSyncing(on){ const d=el('sync-dot'); if(d) d.classList.toggle('on',!!on); }
+
+async function loadState(){
+  const { data, error } = await sb.from('user_state').select('state').eq('user_id', currentUser.id).maybeSingle();
+  if(error){ console.warn('load error',error); return null; }
+  return data ? data.state : null;
+}
+async function saveState(data){
+  setSyncing(true);
+  const { error } = await sb.from('user_state')
+    .upsert({ user_id: currentUser.id, state: data, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  setSyncing(false);
+  if(error){ console.warn('save error',error); showToast('Sync failed — check your connection'); }
+}
 
 /* ---------- Status config (the pipeline) ---------- */
 const STAGES = [
-  {id:'new',      label:'New Order',            color:'#5B7DB1'},
-  {id:'pay_pend', label:'Payment Pending',      color:'#D99A28'},
-  {id:'pay_recv', label:'Payment Received',     color:'#2E9E8F'},
-  {id:'tailor',   label:'Sent to Tailor',       color:'#6C5CB5'},
-  {id:'stitch',   label:'Stitching in Progress',color:'#9A4FB0'},
-  {id:'ready',    label:'Ready to Ship',        color:'#2C9CC4'},
-  {id:'shipped',  label:'Shipped / Couriered',  color:'#3E74C9'},
-  {id:'delivered',label:'Delivered',            color:'#3E9E5C'}
+  {id:'new',      label:'New Order',            color:'#7FA8C4'},
+  {id:'pay_pend', label:'Payment Pending',      color:'#D9A15E'},
+  {id:'pay_recv', label:'Payment Received',     color:'#5FA9A0'},
+  {id:'tailor',   label:'Sent to Tailor',       color:'#8E8FC6'},
+  {id:'stitch',   label:'Stitching in Progress',color:'#B481B8'},
+  {id:'ready',    label:'Ready to Ship',        color:'#6BB0C9'},
+  {id:'shipped',  label:'Shipped / Couriered',  color:'#5E93C0'},
+  {id:'delivered',label:'Delivered',            color:'#57A98E'}
 ];
 const EXTRA = [
-  {id:'hold',     label:'On Hold',   color:'#8A8A8A'},
-  {id:'cancelled',label:'Cancelled', color:'#C0453F'}
+  {id:'hold',     label:'On Hold',   color:'#A79FA9'},
+  {id:'cancelled',label:'Cancelled', color:'#CE6E78'}
 ];
 const ALL_STATUS = [...STAGES, ...EXTRA];
 const statusById = id => ALL_STATUS.find(s=>s.id===id) || STAGES[0];
@@ -483,7 +562,7 @@ el('confirm-cancel').onclick=()=>{el('confirm').classList.remove('open');confirm
 el('confirm-ok').onclick=()=>{el('confirm').classList.remove('open');if(confirmCb)confirmCb();confirmCb=null;};
 
 /* ---------- Persistence ---------- */
-async function persist(){ await Store.save(state); }
+async function persist(){ await saveState(state); }
 
 /* ============================================================
    NAVIGATION
@@ -555,7 +634,7 @@ function renderDash(){
   const list = el('attention-list');
   if(attention.length===0){
     list.innerHTML = `<div class="empty" style="padding:32px 24px">
-      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5" stroke="#B03A63" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 6L9 17l-5-5" stroke="#D26A88" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <h3>All caught up</h3><p>No overdue payments or stalled orders right now.</p></div>`;
   } else {
     list.innerHTML = attention.slice(0,6).map(o=>orderCardHTML(o,true)).join('');
@@ -644,7 +723,7 @@ function renderOrders(){
   const ol=el('orders-list');
   if(list.length===0){
     ol.innerHTML=`<div class="empty">
-      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke="#B03A63"/><path d="M8 10h8M8 14h5" stroke="#B03A63" stroke-linecap="round"/></svg></div>
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke="#D26A88"/><path d="M8 10h8M8 14h5" stroke="#D26A88" stroke-linecap="round"/></svg></div>
       <h3>${ordersSearch||ordersFilter!=='all'?'No matching orders':'No orders yet'}</h3>
       <p>${ordersSearch||ordersFilter!=='all'?'Try a different search or filter.':'Tap the + button to add your first order.'}</p>
     </div>`;
@@ -678,7 +757,7 @@ function renderDetail(){
   const phone=(o.phone||'').replace(/\D/g,'');
 
   const payBadge = o.payStatus||'Pending';
-  const payColor = payBadge==='Paid'?'#3E9E5C':payBadge==='Partial'?'#D99A28':'#C0453F';
+  const payColor = payBadge==='Paid'?'#57A98E':payBadge==='Partial'?'#D9A15E':'#CE6E78';
 
   // stitched pipeline
   let stitchHTML='';
@@ -973,7 +1052,7 @@ function renderTailors(){
   const tl=el('tailor-list');
   if(state.tailors.length===0){
     tl.innerHTML=`<div class="empty">
-      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="8" r="3.5" stroke="#B03A63"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="#B03A63" stroke-linecap="round"/></svg></div>
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="8" r="3.5" stroke="#D26A88"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" stroke="#D26A88" stroke-linecap="round"/></svg></div>
       <h3>No tailors yet</h3><p>Add the tailors you work with so you can assign orders to them.</p></div>`;
   } else {
     tl.innerHTML=state.tailors.map(t=>{
@@ -1071,42 +1150,105 @@ document.querySelectorAll('[data-close-sheet]').forEach(b=>b.onclick=closeSheet)
 /* ============================================================
    SEED + INIT
    ============================================================ */
-function seed(){
-  const now=Date.now(), day=86400000;
-  const t1={id:uid(),name:'Lakshmi',phone:'98450 12345'};
-  const t2={id:uid(),name:'Ramesh',phone:'99000 45678'};
-  return {
-    tailors:[t1,t2],
-    orders:[
-      {id:uid(),createdAt:now-day*1,orderDate:new Date(now-day*1).toISOString().slice(0,10),status:'stitch',
-       history:[{status:'new',at:now-day*4},{status:'pay_recv',at:now-day*3},{status:'tailor',at:now-day*2},{status:'stitch',at:now-day*1}],
-       customer:'Ananya Reddy',instagram:'@ananya.mom',phone:'9876543210',address:'12, Jubilee Hills, Road No 5\nHyderabad 500033',
-       dressType:'Peach frilled birthday frock',size:'Age 4 · chest 22" · length 24"',custom:'Peach with gold lace trim, puff sleeves',
-       tailorId:t1.id,price:1850,advance:1000,payStatus:'Partial',payDate:new Date(now-day*3).toISOString().slice(0,10),
-       expectedDate:new Date(now+day*3).toISOString().slice(0,10),courier:'',tracking:'',notes:'Wants delivery before 20th',images:[]},
-      {id:uid(),createdAt:now-day*0.2,orderDate:new Date().toISOString().slice(0,10),status:'pay_pend',
-       history:[{status:'new',at:now-day*0.4},{status:'pay_pend',at:now-day*0.2}],
-       customer:'Meera Nair',instagram:'@meera_n',phone:'9123456780',address:'44, Indiranagar\nBengaluru 560038',
-       dressType:'Lavender party gown',size:'Age 6',custom:'Lavender net, sequins on bodice',
-       tailorId:'',price:2400,advance:0,payStatus:'Pending',payDate:'',
-       expectedDate:new Date(now+day*8).toISOString().slice(0,10),notes:'',images:[]},
-      {id:uid(),createdAt:now-day*7,orderDate:new Date(now-day*7).toISOString().slice(0,10),status:'delivered',
-       history:[{status:'new',at:now-day*10},{status:'pay_recv',at:now-day*9},{status:'tailor',at:now-day*8},{status:'stitch',at:now-day*6},{status:'ready',at:now-day*4},{status:'shipped',at:now-day*3},{status:'delivered',at:now-day*1}],
-       customer:'Kavya Iyer',instagram:'@kavya.style',phone:'9988776655',address:'7, Adyar\nChennai 600020',
-       dressType:'Red festive lehenga set',size:'Age 5',custom:'Red with mirror work',
-       tailorId:t2.id,price:3200,advance:3200,payStatus:'Paid',payDate:new Date(now-day*9).toISOString().slice(0,10),
-       expectedDate:new Date(now-day*2).toISOString().slice(0,10),courier:'DTDC',tracking:'D1234567890',notes:'Delivered, customer happy!',images:[]}
-    ]
-  };
+/* ============================================================
+   AUTH FLOW
+   ============================================================ */
+let authMode = 'login'; // or 'signup'
+
+function authMsg(text, type){
+  const m=el('auth-msg');
+  m.textContent=text;
+  m.className='auth-msg show '+(type||'err');
+}
+function clearAuthMsg(){ el('auth-msg').className='auth-msg'; }
+
+function setAuthMode(mode){
+  authMode=mode;
+  clearAuthMsg();
+  if(mode==='login'){
+    el('auth-sub').textContent='Sign in to your order manager';
+    el('auth-submit').textContent='Log in';
+    el('auth-pass').setAttribute('autocomplete','current-password');
+    el('auth-toggle-wrap').innerHTML='New here? <button id="auth-toggle">Create an account</button>';
+  } else {
+    el('auth-sub').textContent='Create your business account';
+    el('auth-submit').textContent='Create account';
+    el('auth-pass').setAttribute('autocomplete','new-password');
+    el('auth-toggle-wrap').innerHTML='Already have an account? <button id="auth-toggle">Log in</button>';
+  }
+  bindAuthToggle();
+}
+function bindAuthToggle(){
+  el('auth-toggle').onclick=()=>setAuthMode(authMode==='login'?'signup':'login');
 }
 
-async function init(){
-  const loaded=await Store.load();
-  if(loaded&&loaded.orders){ state=loaded; }
-  else { state=seed(); await persist(); }
+async function handleAuthSubmit(){
+  const email=el('auth-email').value.trim();
+  const pass=el('auth-pass').value;
+  if(!email||!pass){ authMsg('Please enter your email and password.'); return; }
+  if(pass.length<6){ authMsg('Password must be at least 6 characters.'); return; }
+
+  const btn=el('auth-submit');
+  btn.disabled=true; btn.style.opacity='.6';
+  const orig=btn.textContent; btn.textContent='Please wait…';
+
+  try{
+    if(authMode==='signup'){
+      const { data, error } = await sb.auth.signUp({ email, password: pass });
+      if(error){ authMsg(error.message); }
+      else if(data.session){ /* logged in immediately */ }
+      else {
+        authMsg('Account created! If email confirmation is on, check your inbox, then log in.','ok');
+        setAuthMode('login');
+      }
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if(error){ authMsg(error.message); }
+    }
+  }catch(e){ authMsg('Something went wrong. Please try again.'); }
+  finally{ btn.disabled=false; btn.style.opacity=''; btn.textContent=orig; }
+}
+
+async function enterApp(){
+  el('auth-screen').classList.add('hidden');
+  document.querySelector('.app').classList.add('ready');
+  el('acct-btn').textContent=(currentUser.email||'?').trim()[0].toUpperCase();
+  const loaded=await loadState();
+  state = (loaded && loaded.orders) ? loaded : { orders:[], tailors:[] };
   renderDash();
 }
-init();
+function exitApp(){
+  document.querySelector('.app').classList.remove('ready');
+  el('auth-screen').classList.remove('hidden');
+  el('auth-email').value=''; el('auth-pass').value='';
+  state={orders:[],tailors:[]};
+}
+
+/* account button → sign out */
+el('acct-btn').onclick=()=>{
+  askConfirm('Log out?','You will need your email and password to sign back in.','Log out',async()=>{
+    await sb.auth.signOut();
+  });
+};
+
+el('auth-submit').onclick=handleAuthSubmit;
+el('auth-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') handleAuthSubmit(); });
+bindAuthToggle();
+
+/* React to login / logout (fires once on load with the current session too) */
+let appEntered=false;
+sb.auth.onAuthStateChange((event, session)=>{
+  if(session && session.user){
+    currentUser=session.user;
+    if(!appEntered){ appEntered=true; enterApp(); }
+    else { el('acct-btn').textContent=(currentUser.email||'?').trim()[0].toUpperCase(); }
+  } else {
+    currentUser=null;
+    appEntered=false;
+    setAuthMode('login');
+    exitApp();
+  }
+});
 </script>
 </body>
 </html>
