@@ -487,6 +487,30 @@
    ============================================================ */
 const SUPABASE_URL = 'https://vgbnepwgopnrvsuikyjc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_YTns9SAy_DJ63PwrXabZqQ_NlwsnwgZ';
+
+/* Google Sheets auto-export */
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzCmX7ACsgujVPsjHvvo6cCXsoEar9lke0lG7JpbKPl_9Yl3mmWXG10d0K4MrPvwaNEbg/exec';
+function orderPayload(o){
+  const t = state.tailors.find(x=>x.id===o.tailorId);
+  return {
+    id:o.id, orderDate:o.orderDate||'', customer:o.customer||'', instagram:o.instagram||'',
+    phone:o.phone||'', address:o.address||'', dressType:o.dressType||'', size:o.size||'',
+    custom:o.custom||'', tailor:t?t.name:'', status:statusById(o.status).label,
+    price:Number(o.price)||0, advance:Number(o.advance)||0, balance:balance(o),
+    payStatus:o.payStatus||'', payDate:o.payDate||'', expectedDate:o.expectedDate||'',
+    courier:o.courier||'', tracking:o.tracking||'', cost:orderCost(o.id), profit:orderProfit(o),
+    notes:o.notes||''
+  };
+}
+function syncOrder(orderId, action){
+  if(!SHEETS_URL) return;
+  let payload;
+  if(action==='delete'){ payload={id:orderId, action:'delete'}; }
+  else { const o=state.orders.find(x=>x.id===orderId); if(!o) return; payload=orderPayload(o); }
+  try{
+    fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
+  }catch(e){ console.warn('sheet sync failed', e); }
+}
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 
@@ -601,6 +625,7 @@ async function saveExpense(expId){
   if(expId){ const e=state.expenses.find(x=>x.id===expId); if(e) Object.assign(e,data); }
   else { state.expenses.unshift({id:uid(),createdAt:Date.now(),...data}); }
   await persist(); closeSheet(); showToast(expId?'Cost updated':'Cost added');
+  if(data.orderId) syncOrder(data.orderId);
   if(el('view-detail').classList.contains('active')) renderDetail();
   else renderReports();
 }
@@ -913,7 +938,7 @@ function renderDetail(){
   el('detail-edit').onclick=()=>openForm(o.id);
   el('detail-delete').onclick=()=>{
     askConfirm('Delete this order?','This permanently removes '+(o.customer||'this order')+'. This can’t be undone.','Delete',async()=>{
-      state.orders=state.orders.filter(x=>x.id!==o.id); await persist(); showToast('Order deleted'); renderOrders(); go('orders');
+      state.orders=state.orders.filter(x=>x.id!==o.id); await persist(); syncOrder(o.id,'delete'); showToast('Order deleted'); renderOrders(); go('orders');
     });
   };
   if(el('status-fwd')) el('status-fwd').onclick=()=>changeStatus(o.id,STAGES[idx+1].id);
@@ -923,7 +948,7 @@ function renderDetail(){
   el('view-detail').querySelectorAll('[data-del-exp]').forEach(b=>{
     b.onclick=()=>{
       askConfirm('Remove this cost?','This removes the expense from this order.','Remove',async()=>{
-        state.expenses=(state.expenses||[]).filter(x=>x.id!==b.dataset.delExp); await persist(); showToast('Cost removed'); renderDetail();
+        state.expenses=(state.expenses||[]).filter(x=>x.id!==b.dataset.delExp); await persist(); syncOrder(o.id); showToast('Cost removed'); renderDetail();
       });
     };
   });
@@ -946,6 +971,7 @@ async function applyStatus(o,newStatus){
   if(newStatus==='pay_recv'&&o.payStatus!=='Paid'){ if(balance(o)<=0) o.payStatus='Paid'; }
   await persist();
   showToast('Moved to '+statusById(newStatus).label);
+  syncOrder(o.id);
   renderDetail();
 }
 
@@ -1098,6 +1124,7 @@ async function saveForm(){
     const o=state.orders.find(x=>x.id===editingId);
     Object.assign(o,data);
     await persist(); closeSheet(); showToast('Order updated');
+    syncOrder(editingId);
     currentDetailId=editingId; renderDetail(); go('detail');
   } else {
     const status=val('f-status')||'new';
@@ -1105,6 +1132,7 @@ async function saveForm(){
     const o={id:uid(),createdAt:now,status,history:[{status,at:now}],...data};
     state.orders.unshift(o);
     await persist(); closeSheet(); showToast('Order added');
+    syncOrder(o.id);
     currentDetailId=o.id; renderDetail(); go('detail');
   }
 }
