@@ -361,8 +361,18 @@
     position:absolute;top:calc(var(--safe-t) + 14px);right:18px;
     display:flex;align-items:center;gap:8px;
   }
-  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--sage);opacity:0;transition:opacity .2s}
-  .sync-dot.on{opacity:1;animation:pulse 1s infinite}
+  .sync-pill{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:4px 9px 4px 8px;border-radius:20px;
+    font-size:11px;font-weight:800;letter-spacing:.01em;line-height:1;
+    background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line-2);
+    transition:background .2s,color .2s,border-color .2s;white-space:nowrap;
+  }
+  .sync-pill .sd{width:7px;height:7px;border-radius:50%;background:currentColor;flex:0 0 auto}
+  .sync-pill.ok{background:#EAF5EF;color:#3F8F6C;border-color:#CDE9DA}
+  .sync-pill.pending{background:#FBF0DF;color:#B77E2E;border-color:#F0DDBD}
+  .sync-pill.syncing{background:var(--accent-soft);color:var(--accent-ink);border-color:#F3D2DE}
+  .sync-pill.syncing .sd{animation:pulse 1s infinite}
   @keyframes pulse{50%{opacity:.3}}
   .acct-btn{
     width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);
@@ -410,7 +420,7 @@
       </div>
     </div>
     <div class="topbar-account">
-      <span class="sync-dot" id="sync-dot"></span>
+      <span class="sync-pill ok" id="sync-pill"><span class="sd"></span><span id="sync-text">Sync: on</span></span>
       <button class="acct-btn" id="acct-btn" aria-label="Account">?</button>
     </div>
   </div>
@@ -511,22 +521,65 @@ function syncOrder(orderId, action){
     fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
   }catch(e){ console.warn('sheet sync failed', e); }
 }
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+    storageKey: 'tedora-auth'
+  }
+});
 let currentUser = null;
 
-function setSyncing(on){ const d=el('sync-dot'); if(d) d.classList.toggle('on',!!on); }
+// state: 'syncing' | 'ok' | 'pending'
+function setSyncStatus(state){
+  const pill=el('sync-pill'), txt=el('sync-text');
+  if(!pill||!txt) return;
+  pill.classList.remove('ok','pending','syncing');
+  if(state==='syncing'){ pill.classList.add('syncing'); txt.textContent='Syncing…'; }
+  else if(state==='pending'){ pill.classList.add('pending'); txt.textContent='Sync: pending'; }
+  else { pill.classList.add('ok'); txt.textContent='Sync: on'; }
+}
+// kept for backwards compatibility with existing calls
+function setSyncing(on){ if(on) setSyncStatus('syncing'); }
+
+function backupKey(){ return 'tedora-backup-' + (currentUser ? currentUser.id : 'anon'); }
 
 async function loadState(){
-  const { data, error } = await sb.from('user_state').select('state').eq('user_id', currentUser.id).maybeSingle();
-  if(error){ console.warn('load error',error); return null; }
-  return data ? data.state : null;
+  let cloud = null;
+  try{
+    const { data, error } = await sb.from('user_state').select('state').eq('user_id', currentUser.id).maybeSingle();
+    if(error){ console.warn('load error',error); }
+    if(data && data.state) cloud = data.state;
+  }catch(e){ console.warn('load threw',e); }
+  // If the cloud has real data, use it. Otherwise fall back to the on-device backup
+  // so a failed sync never makes your orders disappear.
+  if(cloud && Array.isArray(cloud.orders) && cloud.orders.length) return cloud;
+  try{
+    const local = localStorage.getItem(backupKey());
+    if(local){
+      const parsed = JSON.parse(local);
+      if(parsed && Array.isArray(parsed.orders) && (!cloud || parsed.orders.length >= (cloud.orders?.length||0))){
+        return parsed;
+      }
+    }
+  }catch(e){ console.warn('local backup read failed',e); }
+  return cloud;
 }
 async function saveState(data){
-  setSyncing(true);
-  const { error } = await sb.from('user_state')
-    .upsert({ user_id: currentUser.id, state: data, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-  setSyncing(false);
-  if(error){ console.warn('save error',error); showToast('Sync failed — check your connection'); }
+  setSyncStatus('syncing');
+  // Always keep an on-device backup FIRST, so data survives even if the cloud write fails.
+  try{ localStorage.setItem(backupKey(), JSON.stringify(data)); }catch(e){ console.warn('local backup write failed',e); }
+  let ok = false;
+  try{
+    const { error } = await sb.from('user_state')
+      .upsert({ user_id: currentUser.id, state: data, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    if(error){ console.warn('save error',error); }
+    else ok = true;
+  }catch(e){ console.warn('save threw',e); }
+  setSyncStatus(ok ? 'ok' : 'pending');
+  if(!ok){ showToast('Saved on this device · cloud sync pending'); }
+  return ok;
 }
 
 /* ---------- Status config (the pipeline) ---------- */
@@ -778,7 +831,7 @@ function renderOrders(){
     list=list.filter(o=>(o.customer||'').toLowerCase().includes(q)||(o.instagram||'').toLowerCase().includes(q)||(o.dressType||'').toLowerCase().includes(q));
   }
   list.sort((a,b)=>{
-    if(ordersSort==='newest') return (b.orderDate?new Date(b.orderDate):b.createdAt)-(a.orderDate?new Date(a.orderDate):a.createdAt);
+    if(ordersSort==='newest') return (b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0);
     if(ordersSort==='delivery'){const da=a.expectedDate?new Date(a.expectedDate):Infinity,db=b.expectedDate?new Date(b.expectedDate):Infinity;return da-db;}
     if(ordersSort==='amount') return (Number(b.price)||0)-(Number(a.price)||0);
     return 0;
@@ -796,7 +849,7 @@ function renderOrders(){
     <div class="sort-row">
       <span>Sort</span>
       <select id="order-sort">
-        <option value="newest"${ordersSort==='newest'?' selected':''}>Newest first</option>
+        <option value="newest"${ordersSort==='newest'?' selected':''}>Recently updated</option>
         <option value="delivery"${ordersSort==='delivery'?' selected':''}>By delivery date</option>
         <option value="amount"${ordersSort==='amount'?' selected':''}>By amount</option>
       </select>
@@ -965,6 +1018,7 @@ async function changeStatus(id,newStatus){
 }
 async function applyStatus(o,newStatus){
   o.status=newStatus;
+  o.updatedAt=Date.now();
   o.history=o.history||[];
   o.history.push({status:newStatus,at:Date.now()});
   // auto payment sync
@@ -1123,13 +1177,14 @@ async function saveForm(){
   if(editingId){
     const o=state.orders.find(x=>x.id===editingId);
     Object.assign(o,data);
+    o.updatedAt=Date.now();
     await persist(); closeSheet(); showToast('Order updated');
     syncOrder(editingId);
     currentDetailId=editingId; renderDetail(); go('detail');
   } else {
     const status=val('f-status')||'new';
     const now=Date.now();
-    const o={id:uid(),createdAt:now,status,history:[{status,at:now}],...data};
+    const o={id:uid(),createdAt:now,updatedAt:now,status,history:[{status,at:now}],...data};
     state.orders.unshift(o);
     await persist(); closeSheet(); showToast('Order added');
     syncOrder(o.id);
