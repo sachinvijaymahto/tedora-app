@@ -622,6 +622,23 @@ function fmtTime(ts){ const dt=new Date(ts); return dt.toLocaleDateString('en-IN
 function daysSince(ts){ return Math.floor((Date.now()-ts)/86400000); }
 function balance(o){ return Math.max(0,(Number(o.price)||0)-(Number(o.advance)||0)); }
 
+// Keep the payment status and the pipeline stage in sync.
+// If an order is fully paid (a price exists and nothing is due), mark it Paid,
+// and if it's still parked in the "Payment Pending" stage, move it to "Payment Received"
+// so it stops being counted as pending on the dashboard.
+function reconcilePayment(o){
+  if(!o) return;
+  const hasPrice = (Number(o.price)||0) > 0;
+  if(hasPrice && balance(o) <= 0){
+    if(o.payStatus !== 'Paid') o.payStatus = 'Paid';
+    if(o.status === 'pay_pend'){
+      o.status = 'pay_recv';
+      o.history = o.history || [];
+      o.history.push({status:'pay_recv', at:Date.now()});
+    }
+  }
+}
+
 /* ---------- Expenses ---------- */
 const EXPENSE_CATEGORIES = ['Needle','Thread','Lining (cotton)','Satin fabric','Main fabric','Zip','Lace','Tailor fee','Other'];
 const CAT_COLORS = {'Needle':'#8E8FC6','Thread':'#B481B8','Lining (cotton)':'#7FA8C4','Satin fabric':'#5FA9A0','Main fabric':'#D26A88','Zip':'#6BB0C9','Lace':'#D9A15E','Tailor fee':'#5E93C0','Other':'#A79FA9'};
@@ -734,11 +751,13 @@ function renderDash(){
   const pendingPay = active.reduce((s,o)=>s+balance(o),0);
   const counts={}; STAGES.forEach(s=>counts[s.id]=0);
   state.orders.forEach(o=>{ if(counts[o.status]!=null) counts[o.status]++; });
+  // "Payment Pending" counts by money owed, not by pipeline stage
+  counts['pay_pend'] = active.filter(o=>balance(o)>0).length;
 
   // attention: payment pending OR stuck > 4 days (not delivered/cancelled/hold)
   const attention = active.filter(o=>{
     if(o.status==='delivered') return false;
-    if(o.status==='pay_pend') return true;
+    if(o.status==='pay_pend' && balance(o)>0) return true;
     const last = o.history&&o.history.length?o.history[o.history.length-1].at:o.createdAt;
     return daysSince(last)>=4 && o.status!=='hold';
   }).sort((a,b)=>{
@@ -825,7 +844,12 @@ function bindOrderCards(scope){
 function renderOrders(){
   const filters=[{id:'all',label:'All'},...STAGES,...EXTRA];
   let list=[...state.orders];
-  if(ordersFilter!=='all') list=list.filter(o=>o.status===ordersFilter);
+  if(ordersFilter==='pay_pend'){
+    // "Payment Pending" = everyone who still owes money, regardless of pipeline stage
+    list=list.filter(o=>o.status!=='cancelled' && balance(o)>0);
+  } else if(ordersFilter!=='all'){
+    list=list.filter(o=>o.status===ordersFilter);
+  }
   if(ordersSearch){
     const q=ordersSearch.toLowerCase();
     list=list.filter(o=>(o.customer||'').toLowerCase().includes(q)||(o.instagram||'').toLowerCase().includes(q)||(o.dressType||'').toLowerCase().includes(q));
@@ -1178,6 +1202,7 @@ async function saveForm(){
     const o=state.orders.find(x=>x.id===editingId);
     Object.assign(o,data);
     o.updatedAt=Date.now();
+    reconcilePayment(o);
     await persist(); closeSheet(); showToast('Order updated');
     syncOrder(editingId);
     currentDetailId=editingId; renderDetail(); go('detail');
@@ -1185,6 +1210,7 @@ async function saveForm(){
     const status=val('f-status')||'new';
     const now=Date.now();
     const o={id:uid(),createdAt:now,updatedAt:now,status,history:[{status,at:now}],...data};
+    reconcilePayment(o);
     state.orders.unshift(o);
     await persist(); closeSheet(); showToast('Order added');
     syncOrder(o.id);
@@ -1397,6 +1423,14 @@ async function enterApp(){
   state = (loaded && loaded.orders) ? loaded : { orders:[], tailors:[], expenses:[] };
   if(!state.expenses) state.expenses=[];
   if(!state.tailors) state.tailors=[];
+  // One-time cleanup: fix any already-paid orders still stuck in the "Payment Pending" stage.
+  let changed=false;
+  state.orders.forEach(o=>{
+    const before=o.status+'|'+o.payStatus;
+    reconcilePayment(o);
+    if(before!==o.status+'|'+o.payStatus) changed=true;
+  });
+  if(changed) persist();
   renderDash();
 }
 function exitApp(){
